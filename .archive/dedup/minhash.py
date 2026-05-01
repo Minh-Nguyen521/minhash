@@ -18,13 +18,16 @@ from add_args import add_io_args, add_meta_args, add_minhash_args
 
 SEED = 42
 RNG = np.random.RandomState(SEED)
-NON_ALPHA = re.compile("[^A-Za-z_0-9]")
-MAX_HASH = np.uint64((1 << 32) - 1)
+# consider á, à, ... as a split words
+# NON_ALPHA = re.compile("[^A-Za-z_0-9]")
+MAX_BIT = 64
+NON_ALPHA = re.compile(r"[^a-zA-Z0-9_\u00C0-\u024F\u1E00-\u1EFF]")
+MAX_HASH = np.uint64((1 << MAX_BIT) - 1)
 MERSENNE_PRIME = np.uint64((1 << 61) - 1)
 datasets.logging.set_verbosity_error()
 
 
-def sha1_hash(data: bytes, d: int = 64) -> int:
+def sha1_hash(data: bytes, d: int = MAX_BIT) -> int:
     """
     Generate a d-bit hash value from the given data.
     >>> sha1_hash(b"hello world", 32) => 896314922
@@ -185,6 +188,7 @@ if __name__ == "__main__":
             dtype=np.uint64,
         ).T
 
+        # get minhash signature
         with timer("MinHashing"):
             embedded = ds.map(
                 function=embed_func,
@@ -201,6 +205,7 @@ if __name__ == "__main__":
                 desc="Fingerprinting...",
             )
 
+        # check dedup -> log if both are dedup (no remove)
         with timer("Clustering"):
             for i in tqdm(
                 range(0, len(embedded), args.batch_size),
@@ -229,6 +234,7 @@ if __name__ == "__main__":
                         file_logger.info(f"Similar pair [{a}] vs [{b}]:\n  A: {text_a}\n  B: {text_b}\n{'-' * 60}")
                         logger_cnt += 1
 
+        # use the data that Clustering phase classify to remove the dedup
         with timer("Filtering"):
             gc.freeze()
             gc.disable()
