@@ -34,6 +34,7 @@ def add_io_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     parser.add_argument(
         "--debug", action=argparse.BooleanOptionalAction, help="Whether to run in debug mode", default=False
     )
+    parser.add_argument("--log-file", type=str, help="Path to log file (optional, logs to terminal by default)")
     return parser
 
 

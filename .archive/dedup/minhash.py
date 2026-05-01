@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Set, Tuple
 from scipy.integrate import quad as integrate
 from tqdm import tqdm
 
-from common import UnionFind, ngrams, Timer, logger
+from common import UnionFind, ngrams, Timer, logger, file_logger, setup_file_logging
 from add_args import add_io_args, add_meta_args, add_minhash_args
 
 
@@ -24,7 +24,7 @@ MERSENNE_PRIME = np.uint64((1 << 61) - 1)
 datasets.logging.set_verbosity_error()
 
 
-def sha1_hash(data: bytes, d: int = 32) -> int:
+def sha1_hash(data: bytes, d: int = 64) -> int:
     """
     Generate a d-bit hash value from the given data.
     >>> sha1_hash(b"hello world", 32) => 896314922
@@ -58,6 +58,8 @@ def embed_func(
     """
     a, b = permutations
     masks: np.ndarray = np.full(shape=num_perm, dtype=np.uint64, fill_value=MAX_HASH)
+    if isinstance(content, list):
+        content = " ".join(content)
     tokens: Set[str] = {" ".join(t) for t in ngrams(NON_ALPHA.split(content), ngram_size)}
     hashvalues: np.ndarray = np.array([sha1_hash(token.encode("utf-8")) for token in tokens], dtype=np.uint64)
     permuted_hashvalues = np.bitwise_and(
@@ -136,6 +138,9 @@ if __name__ == "__main__":
     parser = add_minhash_args(parser)
     args = parser.parse_args()
 
+    if args.log_file:
+        setup_file_logging(args.log_file)
+
     mp.set_start_method("fork", force=True)
     uf = UnionFind()
     timer = Timer()
@@ -161,8 +166,12 @@ if __name__ == "__main__":
                     split=args.split,
                     revision=args.revision,
                     cache_dir=args.cache_dir,
-                    use_auth_token=args.use_auth_token,
+                    token=args.use_auth_token,
                 )
+
+        if isinstance(ds, datasets.DatasetDict):
+            split = args.split or list(ds.keys())[0]
+            ds = ds[split]
 
         DATA_SIZE = len(ds)
         PERMUTATIONS = np.array(
@@ -203,6 +212,7 @@ if __name__ == "__main__":
                     for i, H in enumerate(Hs):
                         HASH_TABLES[i][H].add(key)
 
+            logger = 0
             for table in tqdm(HASH_TABLES, dynamic_ncols=True, desc="Clustering..."):
                 for cluster in table.values():
                     if len(cluster) <= 1:
@@ -210,6 +220,14 @@ if __name__ == "__main__":
                     idx = min(cluster)
                     for x in cluster:
                         uf.union(x, idx)
+                    if logger <= 20:
+                        a, b = idx, next(iter(cluster - {idx}))
+                        text_a = ds[a][args.column]
+                        text_b = ds[b][args.column]
+                        if isinstance(text_a, list): text_a = " ".join(text_a)
+                        if isinstance(text_b, list): text_b = " ".join(text_b)
+                        file_logger.info(f"Similar pair [{a}] vs [{b}]:\n  A: {text_a[:200]}\n  B: {text_b[:200]}\n{'-' * 60}")
+                        logger += 1
 
         with timer("Filtering"):
             gc.freeze()

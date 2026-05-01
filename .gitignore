@@ -11,3 +11,4 @@ deduplicate-text-datasets/
 none
 *.7z
 *.xyz
+.cache/

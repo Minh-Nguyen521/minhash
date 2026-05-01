@@ -2,10 +2,24 @@
 
 import logging
 from rich.logging import RichHandler
+
 logger = logging.getLogger("text_dedup")
 logger.setLevel(logging.INFO)
 logger.addHandler(RichHandler(rich_tracebacks=True))
 logger.propagate = False
+
+
+file_logger = logging.getLogger("text_dedup.file")
+file_logger.setLevel(logging.INFO)
+file_logger.propagate = False
+
+
+def setup_file_logging(log_file: str):
+    handler = logging.FileHandler(log_file, encoding="utf-8")
+    handler.setLevel(logging.INFO)
+    handler.setFormatter(logging.Formatter("%(message)s"))
+    logger.addHandler(handler)
+    file_logger.addHandler(handler)
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - -
