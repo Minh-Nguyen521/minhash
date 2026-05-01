@@ -231,7 +231,9 @@ if __name__ == "__main__":
                         text_b = ds[b][args.column]
                         if isinstance(text_a, list): text_a = " ".join(text_a)
                         if isinstance(text_b, list): text_b = " ".join(text_b)
-                        file_logger.info(f"Similar pair [{a}] vs [{b}]:\n  A: {text_a}\n  B: {text_b}\n{'-' * 60}")
+                        if not text_a or not text_b:
+                            continue
+                        file_logger.info(f"\nSimilar pair [{a}] vs [{b}]:\n  [{a}]: {text_a}\n{'+' * 60}\n  [{b}]: {text_b}\n\n{'-' * 60}")
                         logger_cnt += 1
 
         # use the data that Clustering phase classify to remove the dedup
