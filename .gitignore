@@ -12,3 +12,4 @@ none
 *.7z
 *.xyz
 .cache/
+*-deduped-*/
