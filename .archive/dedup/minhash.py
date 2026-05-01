@@ -212,7 +212,7 @@ if __name__ == "__main__":
                     for i, H in enumerate(Hs):
                         HASH_TABLES[i][H].add(key)
 
-            logger = 0
+            logger_cnt = 0
             for table in tqdm(HASH_TABLES, dynamic_ncols=True, desc="Clustering..."):
                 for cluster in table.values():
                     if len(cluster) <= 1:
@@ -220,14 +220,14 @@ if __name__ == "__main__":
                     idx = min(cluster)
                     for x in cluster:
                         uf.union(x, idx)
-                    if logger <= 20:
+                    if logger_cnt <= 50:
                         a, b = idx, next(iter(cluster - {idx}))
                         text_a = ds[a][args.column]
                         text_b = ds[b][args.column]
                         if isinstance(text_a, list): text_a = " ".join(text_a)
                         if isinstance(text_b, list): text_b = " ".join(text_b)
-                        file_logger.info(f"Similar pair [{a}] vs [{b}]:\n  A: {text_a[:200]}\n  B: {text_b[:200]}\n{'-' * 60}")
-                        logger += 1
+                        file_logger.info(f"Similar pair [{a}] vs [{b}]:\n  A: {text_a}\n  B: {text_b}\n{'-' * 60}")
+                        logger_cnt += 1
 
         with timer("Filtering"):
             gc.freeze()
