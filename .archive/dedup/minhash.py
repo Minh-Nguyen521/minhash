@@ -218,6 +218,7 @@ if __name__ == "__main__":
                         HASH_TABLES[i][H].add(key)
 
             logger_cnt = 0
+            logged_pairs = set()
             for table in tqdm(HASH_TABLES, dynamic_ncols=True, desc="Clustering..."):
                 for cluster in table.values():
                     if len(cluster) <= 1:
@@ -227,6 +228,8 @@ if __name__ == "__main__":
                         uf.union(x, idx)
                     if logger_cnt <= 50:
                         a, b = idx, next(iter(cluster - {idx}))
+                        if (a, b) in logged_pairs:
+                            continue
                         text_a = ds[a][args.column]
                         text_b = ds[b][args.column]
                         if isinstance(text_a, list): text_a = " ".join(text_a)
@@ -234,6 +237,7 @@ if __name__ == "__main__":
                         if not text_a or not text_b:
                             continue
                         file_logger.info(f"\nSimilar pair [{a}] vs [{b}]:\n  [{a}]: {text_a}\n{'+' * 60}\n  [{b}]: {text_b}\n\n{'-' * 60}")
+                        logged_pairs.add((a, b))
                         logger_cnt += 1
 
         # use the data that Clustering phase classify to remove the dedup
